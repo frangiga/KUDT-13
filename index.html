@@ -1,1 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <!-- SI ESTÁS VIENDO ESTO PARA SOLUCIONAR EL JUEGO, ERES UN MISERABLE QUE NO MERECE ESTE CACHÉ -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KUDT #13 - Piedra, Papel, Tijera</title>
+    <style>
+        :root {
+            --bg-dark: #0b0719;
+            --bg-card: rgba(23, 15, 48, 0.75);
+            --purple-main: #7c3aed;
+            --purple-glow: #a855f7;
+            --blue-main: #2563eb;
+            --blue-cyan: #06b6d4;
+            --orange-main: #f97316;
+            --orange-glow: #ff8c00;
+            --text-light: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-glow: rgba(168, 85, 247, 0.3);
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        html, body {
+            height: 100%;
+            height: 100dvh;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at 50% 20%, #2e1065 0%, #0b0719 70%);
+            color: var(--text-light);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 12px 15px 8px 15px;
+        }
+        /* Header */
+        header {
+            text-align: center;
+            margin-top: 4px;
+            margin-bottom: 2px;
+            flex-shrink: 0;
+        }
+        header h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--orange-glow), var(--purple-glow), var(--blue-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            line-height: 1.1;
+        }
+        header p {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 1px;
+        }
+        .target-badge {
+            display: inline-block;
+            background: rgba(249, 115, 22, 0.15);
+            border: 1px solid var(--orange-main);
+            color: var(--orange-glow);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        /* Main Game Layout Container */
+        .game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            min-height: 0;
+        }
+        /* Scoreboard */
+        .scoreboard-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+        .score-card {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            padding: 8px 10px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.37);
+        }
+        .score-card.player { border-color: rgba(6, 182, 212, 0.5); }
+        .score-card.banca { border-color: rgba(249, 115, 22, 0.5); }
+        .score-card .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+        .score-card .score {
+            font-size: 2rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-top: 2px;
+        }
+        .score-card.player .score {
+            color: var(--blue-cyan);
+            text-shadow: 0 0 12px rgba(6, 182, 212, 0.5);
+        }
+        .score-card.banca .score {
+            color: var(--orange-main);
+            text-shadow: 0 0 12px rgba(249, 115, 22, 0.5);
+        }
+        .vs-circle {
+            font-weight: 900;
+            font-size: 0.9rem;
+            color: var(--purple-glow);
+            background: rgba(124, 58, 237, 0.2);
+            border: 1px solid var(--purple-glow);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+            flex-shrink: 0;
+        }
+        /* Arena Display */
+        .arena {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border-glow);
+            border-radius: 18px;
+            padding: 18px 12px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+        .choice-display {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100px;
+        }
+        .choice-icon-box {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.3rem;
+            transition: all 0.3s ease;
+        }
+        .choice-icon-box.active {
+            border-style: solid;
+            transform: scale(1.05);
+        }
+        .choice-icon-box.player-active {
+            border-color: var(--blue-cyan);
+            background: rgba(6, 182, 212, 0.15);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        .choice-icon-box.banca-active {
+            border-color: var(--orange-main);
+            background: rgba(249, 115, 22, 0.15);
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+        .choice-name {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        /* Status Banner */
+        .status-message {
+            position: absolute;
+            bottom: -13px;
+            background: linear-gradient(90deg, var(--purple-main), var(--blue-main));
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            letter-spacing: 0.5px;
+            text-align: center;
+            white-space: nowrap;
+            max-width: 90%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        /* Controls / Buttons */
+        .controls-wrapper {
+            width: 100%;
+            text-align: center;
+        }
+        .controls-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+        }
+        .btn-choice {
+            flex: 1;
+            background: rgba(30, 20, 60, 0.8);
+            border: 2px solid var(--purple-main);
+            border-radius: 14px;
+            padding: 10px 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .btn-choice .icon {
+            font-size: 1.8rem;
+        }
+        .btn-choice .btn-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-transform: uppercase;
+        }
+        .btn-choice:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        .btn-choice:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            filter: grayscale(0.8);
+        }
+        /* Modals Generic */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 3, 12, 0.92);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-card {
+            background: linear-gradient(145deg, #180e36, #0d0722);
+            border: 2px solid var(--orange-glow);
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            padding: 22px 15px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(249, 115, 22, 0.4);
+            transform: scale(0.8);
+            transition: transform 0.4s ease;
+        }
+        .modal-overlay.active .modal-card {
+            transform: scale(1);
+        }
+        /* INITIAL LANGUAGE SELECTION MODAL */
+        .lang-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-lang-option {
+            background: rgba(30, 20, 60, 0.8);
+            border: 1px solid var(--purple-main);
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: var(--text-light);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .btn-lang-option:hover, .btn-lang-option:active {
+            border-color: var(--orange-glow);
+            background: rgba(249, 115, 22, 0.2);
+            transform: translateY(-2px);
+        }
+        .btn-lang-option .flag {
+            font-size: 1.4rem;
+        }
+        .modal-card h2 {
+            color: var(--blue-cyan);
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        .key-badge {
+            background: linear-gradient(90deg, #ea580c, #c026d3);
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            margin: 12px 0 8px 0;
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.5);
+            display: inline-block;
+            white-space: nowrap;
+            max-width: 100%;
+            text-transform: none;
+        }
+        /* Modal Action Buttons */
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn-modal {
+            padding: 10px 15px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-copy {
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid var(--blue-cyan);
+            color: var(--blue-cyan);
+        }
+        .btn-copy:hover, .btn-copy:active {
+            background: rgba(6, 182, 212, 0.3);
+            transform: translateY(-2px);
+        }
+        .btn-certitude {
+            background: linear-gradient(90deg, #ea580c, #f97316);
+            color: white;
+            box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+        }
+        .btn-certitude:hover, .btn-certitude:active {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+        }
+        .btn-reset {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .btn-reset:hover, .btn-reset:active {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-light);
+        }
+        /* Shake animation for defeat */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.5s ease-in-out; }
+        /* Confetti Canvas */
+        #canvas-confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 999;
+        }
+        /* FOOTER FIRMA GLOBAL CENTRADA Y AGRUPADA */
+        footer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 6px 4px 2px 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            flex-shrink: 0;
+        }
+        .footer-content {
+            width: 100%;
+            max-width: 300px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            text-transform: none !important;
+        }
+        footer a:hover {
+            color: var(--orange-glow);
+            text-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas-confetti"></canvas>
+    <header>
+        <h1>KUDT #13</h1>
+        <p style="color: var(--orange-glow); font-size: 0.9rem; margin-top: 2px; font-weight: 700;">GCBZ3Q1</p>
+        <p id="txt-subtitle">Piedra, Papel o Tijera</p>
+        <div class="target-badge" id="txt-badge">Gana 20 partidas a la banca</div>
+    </header>
 
+    <div class="game-container">
+        <!-- Scoreboard -->
+        <div class="scoreboard-container">
+            <div class="score-card player">
+                <div class="label" id="txt-label-player">Jugador</div>
+                <div class="score" id="player-score">0</div>
+            </div>
+            <div class="vs-circle">VS</div>
+            <div class="score-card banca">
+                <div class="label" id="txt-label-banca">Banca</div>
+                <div class="score" id="banca-score">0</div>
+            </div>
+        </div>
+
+        <!-- Battle Arena -->
+        <div class="arena" id="arena-box">
+            <div class="choice-display">
+                <div class="choice-icon-box" id="player-box">❓</div>
+                <div class="choice-name" id="player-choice-name">...</div>
+            </div>
+            <div class="choice-display">
+                <div class="choice-icon-box" id="banca-box">❓</div>
+                <div class="choice-name" id="banca-choice-name">...</div>
+            </div>
+            <div class="status-message" id="status-msg">¡Elige tu movimiento!</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-wrapper">
+            <div class="controls-title" id="txt-select-title">Selecciona tu jugada</div>
+            <div class="controls">
+                <button class="btn-choice" onclick="playRound('rock')">
+                    <span class="icon">💎</span>
+                    <span class="btn-label" id="txt-btn-rock">Piedra</span>
+                </button>
+                <button class="btn-choice" onclick="playRound('paper')">
+                    <span class="icon">📄</span>
+                    <span class="btn-label" id="txt-btn-paper">Papel</span>
+                </button>
+                <button class="btn-choice" onclick="playRound('scissors')">
+                    <span class="icon">✂️</span>
+                    <span class="btn-label" id="txt-btn-scissors">Tijera</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIRMA PIE DE PÁGINA GLOBAL -->
+    <footer>
+        <div class="footer-content">
+            <a href="https://www.geocaching.com/plan/lists/BMFC2Z7" target="_blank" rel="noopener noreferrer">GeoPaterna</a>
+            <a href="https://www.geocaching.com/p/" target="_blank" rel="noopener noreferrer">fran_giga</a>
+        </div>
+    </footer>
+
+    <!-- Initial Language Selection Modal -->
+    <div class="modal-overlay active" id="lang-modal">
+        <div class="modal-card">
+            <h2>SELECT LANGUAGE</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem;">Choose your language to start</p>
+            <div class="lang-grid">
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('es')"><span class="flag">🇪🇸</span><span>Español</span></button>
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('en')"><span class="flag">🇬🇧</span><span>English</span></button>
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('fr')"><span class="flag">🇫🇷</span><span>Français</span></button>
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('pt')"><span class="flag">🇵🇹</span><span>Português</span></button>
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('de')"><span class="flag">🇩🇪</span><span>Deutsch</span></button>
+                <button class="btn-lang-option" onclick="chooseInitialLanguage('it')"><span class="flag">🇮🇹</span><span>Italiano</span></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="modal-overlay" id="victory-modal">
+        <div class="modal-card">
+            <h2 id="txt-victory-title">¡LO CONSEGUISTE! 🎉</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem;"><span id="txt-victory-desc">Has derrotado a la banca 20 a </span><span id="final-banca-score">0</span></p>
+            <div style="margin-top: 15px;">
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;" id="txt-certitude-label">Clave Certitude:</span><br>
+                <div class="key-badge" id="secret-key">TIERRA-DE-VINO</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-copy" onclick="copyKey()" id="txt-btn-copy">📋 Copiar Clave</button>
+                <a href="https://www.certitudes.org/certitude?wp=GCBZ3Q1" target="_blank" rel="noopener noreferrer" class="btn-modal btn-certitude" id="txt-btn-certitude">🚀 IR AL CERTITUDE</a>
+                <button class="btn-modal btn-reset" onclick="resetGameFull()" id="txt-btn-replay">🔄 Jugar de Nuevo</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TRANSLATIONS DICTIONARY
+        const translations = {
+            es: {
+                subtitle: "Piedra, Papel o Tijera",
+                badge: "Gana 20 partidas a la banca",
+                player: "Jugador",
+                banca: "Banca",
+                thinking: "Pensando...",
+                waiting: "Esperando...",
+                start: "¡Elige tu movimiento!",
+                select: "Selecciona tu jugada",
+                rock: "Piedra",
+                paper: "Papel",
+                scissors: "Tijera",
+                draw: "¡Empate en esta ronda!",
+                pointPlayer: "¡Punto para ti! ({p} vence a {b})",
+                pointBanca: "¡Punto para la Banca! ({b} vence a {p})",
+                bancaWon: "¡La Banca ha alcanzado 20 puntos! Reiniciando...",
+                resetSuccess: "Juego reiniciado. ¡Inténtalo de nuevo!",
+                victoryTitle: "¡LO CONSEGUISTE! 🎉",
+                victoryDesc: "Has derrotado a la banca 20 a ",
+                certitudeLabel: "Clave Certitude:",
+                copyBtn: "📋 Copiar Clave",
+                copiedBtn: "✅ ¡Copiado!",
+                certitudeBtn: "🚀 IR AL CERTITUDE",
+                replay: "🔄 Jugar de Nuevo",
+                shaking: "¡Piedra, papel o tijera...!"
+            },
+            en: {
+                subtitle: "Rock, Paper, Scissors",
+                badge: "Win 20 rounds against the bank",
+                player: "Player",
+                banca: "Bank",
+                thinking: "Thinking...",
+                waiting: "Waiting...",
+                start: "Choose your move!",
+                select: "Select your move",
+                rock: "Rock",
+                paper: "Paper",
+                scissors: "Scissors",
+                draw: "It's a tie this round!",
+                pointPlayer: "Point for you! ({p} beats {b})",
+                pointBanca: "Point for the Bank! ({b} beats {p})",
+                bancaWon: "The Bank reached 20 points! Resetting...",
+                resetSuccess: "Game reset. Try again!",
+                victoryTitle: "YOU DID IT! 🎉",
+                victoryDesc: "You defeated the bank 20 to ",
+                certitudeLabel: "Certitude Keyword:",
+                copyBtn: "📋 Copy Key",
+                copiedBtn: "✅ Copied!",
+                certitudeBtn: "🚀 GO TO CERTITUDE",
+                replay: "🔄 Play Again",
+                shaking: "Rock, paper, scissors...!"
+            },
+            fr: {
+                subtitle: "Pierre, Papier, Ciseaux",
+                badge: "Gagnez 20 parties contre la banque",
+                player: "Joueur",
+                banca: "Banque",
+                thinking: "Réflexion...",
+                waiting: "En attente...",
+                start: "Choisissez votre coup !",
+                select: "Sélectionnez votre coup",
+                rock: "Pierre",
+                paper: "Papier",
+                scissors: "Ciseaux",
+                draw: "Égalité pour cette manche !",
+                pointPlayer: "Point pour vous ! ({p} bat {b})",
+                pointBanca: "Point pour la Banque ! ({b} bat {p})",
+                bancaWon: "La Banque a atteint 20 points ! Réinitialisation...",
+                resetSuccess: "Jeu réinitialisé. Réessayez !",
+                victoryTitle: "RÉUSSI ! 🎉",
+                victoryDesc: "Vous avez battu la banque 20 à ",
+                certitudeLabel: "Mot-clé Certitude :",
+                copyBtn: "📋 Copier la clé",
+                copiedBtn: "✅ Copié !",
+                certitudeBtn: "🚀 ALLER SUR CERTITUDE",
+                replay: "🔄 Rejouer",
+                shaking: "Pierre, papier, ciseaux...!"
+            },
+            pt: {
+                subtitle: "Pedra, Papel, Tesoura",
+                badge: "Vença 20 rodadas contra a banca",
+                player: "Jogador",
+                banca: "Banca",
+                thinking: "Pensando...",
+                waiting: "Aguardando...",
+                start: "Escolha a sua jogada!",
+                select: "Selecione a sua jogada",
+                rock: "Pedra",
+                paper: "Papel",
+                scissors: "Tesoura",
+                draw: "Empate nesta rodada!",
+                pointPlayer: "Ponto para você! ({p} vence {b})",
+                pointBanca: "Ponto para a Banca! ({b} vence {p})",
+                bancaWon: "A Banca atingiu 20 pontos! Reiniciando...",
+                resetSuccess: "Jogo reiniciado. Tente novamente!",
+                victoryTitle: "CONSEGUIU! 🎉",
+                victoryDesc: "Você derrotou a banca por 20 a ",
+                certitudeLabel: "Chave Certitude:",
+                copyBtn: "📋 Copiar Chave",
+                copiedBtn: "✅ Copiado!",
+                certitudeBtn: "🚀 IR PARA O CERTITUDE",
+                replay: "🔄 Jogar Novamente",
+                shaking: "Pedra, papel, tesoura...!"
+            },
+            de: {
+                subtitle: "Stein, Papier, Schere",
+                badge: "Gewinne 20 Runden gegen die Bank",
+                player: "Spieler",
+                banca: "Bank",
+                thinking: "Überlegt...",
+                waiting: "Wartet...",
+                start: "Wähle deinen Zug!",
+                select: "Wähle deinen Zug",
+                rock: "Stein",
+                paper: "Papier",
+                scissors: "Schere",
+                draw: "Unentschieden in dieser Runde!",
+                pointPlayer: "Punkt für dich! ({p} schlägt {b})",
+                pointBanca: "Punkt für die Bank! ({b} schlägt {p})",
+                bancaWon: "Die Bank hat 20 Punkte erreicht! Neustart...",
+                resetSuccess: "Spiel zurückgesetzt. Versuche es nochmal!",
+                victoryTitle: "GESCHAFFT! 🎉",
+                victoryDesc: "Du hast die Bank besiegt 20 zu ",
+                certitudeLabel: "Certitude-Schlüssel:",
+                copyBtn: "📋 Schlüssel kopieren",
+                copiedBtn: "✅ Kopiert!",
+                certitudeBtn: "🚀 ZU CERTITUDE GEHEN",
+                replay: "🔄 Nochmal spielen",
+                shaking: "Stein, Papier, Schere...!"
+            },
+            it: {
+                subtitle: "Sasso, Carta, Forbice",
+                badge: "Vinci 20 partite contro la banca",
+                player: "Giocatore",
+                banca: "Banca",
+                thinking: "Pensando...",
+                waiting: "In attesa...",
+                start: "Scegli la tua mossa!",
+                select: "Seleziona la tua mossa",
+                rock: "Sasso",
+                paper: "Carta",
+                scissors: "Forbice",
+                draw: "Pareggio in questo turno!",
+                pointPlayer: "Punto per te! ({p} batte {b})",
+                pointBanca: "Punto per la Banca! ({b} batte {p})",
+                bancaWon: "La Banca ha raggiunto 20 punti! Ripristino...",
+                resetSuccess: "Gioco ripristinato. Riprova!",
+                victoryTitle: "CE L'HAI FATTA! 🎉",
+                victoryDesc: "Hai sconfitto la banca 20 a ",
+                certitudeLabel: "Chiave Certitude:",
+                copyBtn: "📋 Copia Chiave",
+                copiedBtn: "✅ Copiato!",
+                certitudeBtn: "🚀 VAI SU CERTITUDE",
+                replay: "🔄 Gioca di nuovo",
+                shaking: "Sasso, carta, forbice...!"
+            }
+        };
+
+        let currentLang = 'es';
+
+        function chooseInitialLanguage(lang) {
+            setLanguage(lang);
+            document.getElementById('lang-modal').classList.remove('active');
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            document.getElementById('txt-subtitle').innerText = t.subtitle;
+            document.getElementById('txt-badge').innerText = t.badge;
+            document.getElementById('txt-label-player').innerText = t.player;
+            document.getElementById('txt-label-banca').innerText = t.banca;
+            document.getElementById('txt-select-title').innerText = t.select;
+            document.getElementById('txt-btn-rock').innerText = t.rock;
+            document.getElementById('txt-btn-paper').innerText = t.paper;
+            document.getElementById('txt-btn-scissors').innerText = t.scissors;
+            document.getElementById('txt-victory-title').innerText = t.victoryTitle;
+            document.getElementById('txt-victory-desc').innerText = t.victoryDesc;
+            document.getElementById('txt-certitude-label').innerText = t.certitudeLabel;
+            document.getElementById('txt-btn-copy').innerText = t.copyBtn;
+            document.getElementById('txt-btn-certitude').innerText = t.certitudeBtn;
+            document.getElementById('txt-btn-replay').innerText = t.replay;
+
+            if (!isPlaying && playerScore === 0 && bancaScore === 0) {
+                document.getElementById('status-msg').innerText = t.start;
+                document.getElementById('player-choice-name').innerText = t.waiting;
+                document.getElementById('banca-choice-name').innerText = t.waiting;
+            }
+        }
+
+        // Copy Key Functionality
+        function copyKey() {
+            const keyText = document.getElementById('secret-key').innerText;
+            navigator.clipboard.writeText(keyText).then(() => {
+                const copyBtn = document.getElementById('txt-btn-copy');
+                copyBtn.innerText = translations[currentLang].copiedBtn;
+                setTimeout(() => {
+                    copyBtn.innerText = translations[currentLang].copyBtn;
+                }, 2000);
+            }).catch(err => {
+                console.error('Error al copiar: ', err);
+            });
+        }
+
+        // Audio Synthesizer
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioCtx();
+            }
+        }
+
+        function playSound(type) {
+            initAudio();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'win') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'lose') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(150, now + 0.25);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'victory') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    g.gain.setValueAtTime(0.25, now + idx * 0.12);
+                    g.gain.linearRampToValueAtTime(0.01, now + idx * 0.12 + 0.25);
+                    o.start(now + idx * 0.12);
+                    o.stop(now + idx * 0.12 + 0.25);
+                });
+            } else if (type === 'reset') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, now);
+                osc.frequency.linearRampToValueAtTime(200, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+        }
+
+        // Game State
+        let playerScore = 0;
+        let bancaScore = 0;
+        const TARGET_SCORE = 20;
+        let isPlaying = false;
+
+        function getMoveName(moveKey) {
+            return translations[currentLang][moveKey];
+        }
+
+        function playRound(playerChoice) {
+            if (isPlaying) return;
+            isPlaying = true;
+            playSound('click');
+            setButtonsDisabled(true);
+
+            const playerBox = document.getElementById('player-box');
+            const bancaBox = document.getElementById('banca-box');
+            const playerChoiceName = document.getElementById('player-choice-name');
+            const bancaChoiceName = document.getElementById('banca-choice-name');
+            const statusMsg = document.getElementById('status-msg');
+            const t = translations[currentLang];
+
+            playerBox.className = 'choice-icon-box active player-active';
+            bancaBox.className = 'choice-icon-box active banca-active';
+
+            playerBox.innerText = '✊';
+            bancaBox.innerText = '✊';
+            playerChoiceName.innerText = t.thinking;
+            bancaChoiceName.innerText = t.thinking;
+            statusMsg.innerText = t.shaking;
+
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                playerBox.style.transform = `translateY(${step % 2 === 0 ? -6 : 0}px) scale(1.05)`;
+                bancaBox.style.transform = `translateY(${step % 2 === 0 ? -6 : 0}px) scale(1.05)`;
+
+                if (step >= 6) {
+                    clearInterval(interval);
+                    resolveRound(playerChoice);
+                }
+            }, 120);
+        }
+
+        function resolveRound(playerChoice) {
+            const choices = ['rock', 'paper', 'scissors'];
+            const bancaChoice = choices[Math.floor(Math.random() * choices.length)];
+            const moveIcons = { rock: '💎', paper: '📄', scissors: '✂️' };
+
+            const playerBox = document.getElementById('player-box');
+            const bancaBox = document.getElementById('banca-box');
+            const playerChoiceName = document.getElementById('player-choice-name');
+            const bancaChoiceName = document.getElementById('banca-choice-name');
+            const statusMsg = document.getElementById('status-msg');
+            const t = translations[currentLang];
+
+            playerBox.style.transform = 'none';
+            bancaBox.style.transform = 'none';
+
+            playerBox.innerText = moveIcons[playerChoice];
+            bancaBox.innerText = moveIcons[bancaChoice];
+            playerChoiceName.innerText = getMoveName(playerChoice);
+            bancaChoiceName.innerText = getMoveName(bancaChoice);
+
+            const pName = getMoveName(playerChoice);
+            const bName = getMoveName(bancaChoice);
+
+            if (playerChoice === bancaChoice) {
+                statusMsg.innerText = t.draw;
+            } else if (
+                (playerChoice === 'rock' && bancaChoice === 'scissors') ||
+                (playerChoice === 'paper' && bancaChoice === 'rock') ||
+                (playerChoice === 'scissors' && bancaChoice === 'paper')
+            ) {
+                playerScore++;
+                document.getElementById('player-score').innerText = playerScore;
+                statusMsg.innerText = t.pointPlayer.replace('{p}', pName).replace('{b}', bName);
+                playSound('win');
+            } else {
+                bancaScore++;
+                document.getElementById('banca-score').innerText = bancaScore;
+                statusMsg.innerText = t.pointBanca.replace('{p}', pName).replace('{b}', bName);
+                playSound('lose');
+            }
+
+            setTimeout(() => {
+                if (playerScore >= TARGET_SCORE) {
+                    handleVictory();
+                } else if (bancaScore >= TARGET_SCORE) {
+                    handleDefeat();
+                } else {
+                    setButtonsDisabled(false);
+                    isPlaying = false;
+                }
+            }, 600);
+        }
+
+        function handleVictory() {
+            playSound('victory');
+            startConfetti();
+            document.getElementById('final-banca-score').innerText = bancaScore;
+            document.getElementById('victory-modal').classList.add('active');
+        }
+
+        function handleDefeat() {
+            playSound('reset');
+            const arenaBox = document.getElementById('arena-box');
+            arenaBox.classList.add('shake');
+            const statusMsg = document.getElementById('status-msg');
+            const t = translations[currentLang];
+
+            statusMsg.innerText = t.bancaWon;
+            statusMsg.style.background = 'linear-gradient(90deg, #dc2626, #ea580c)';
+
+            setTimeout(() => {
+                arenaBox.classList.remove('shake');
+                resetGameScores();
+                statusMsg.innerText = t.resetSuccess;
+                statusMsg.style.background = 'linear-gradient(90deg, var(--purple-main), var(--blue-main))';
+                setButtonsDisabled(false);
+                isPlaying = false;
+            }, 1800);
+        }
+
+        function resetGameScores() {
+            playerScore = 0;
+            bancaScore = 0;
+            const t = translations[currentLang];
+            document.getElementById('player-score').innerText = '0';
+            document.getElementById('banca-score').innerText = '0';
+            document.getElementById('player-box').innerText = '❓';
+            document.getElementById('banca-box').innerText = '❓';
+            document.getElementById('player-choice-name').innerText = t.waiting;
+            document.getElementById('banca-choice-name').innerText = t.waiting;
+            document.getElementById('player-box').className = 'choice-icon-box';
+            document.getElementById('banca-box').className = 'choice-icon-box';
+        }
+
+        function resetGameFull() {
+            document.getElementById('victory-modal').classList.remove('active');
+            stopConfetti();
+            resetGameScores();
+            document.getElementById('status-msg').innerText = translations[currentLang].start;
+            setButtonsDisabled(false);
+            isPlaying = false;
+        }
+
+        function setButtonsDisabled(disabled) {
+            const btns = document.querySelectorAll('.btn-choice');
+            btns.forEach(b => b.disabled = disabled);
+        }
+
+        // Confetti Animation
+        let confettiAnimationId;
+
+        function startConfetti() {
+            const canvas = document.getElementById('canvas-confetti');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const particles = [];
+            const colors = ['#06b6d4', '#a855f7', '#f97316', '#3b82f6', '#4ade80', '#e11d48'];
+
+            for (let i = 0; i < 80; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 6 + 3,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speedY: Math.random() * 3 + 2,
+                    speedX: Math.random() * 2 - 1,
+                    angle: Math.random() * 360,
+                    spin: Math.random() * 0.2 - 0.1
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.angle += p.spin;
+
+                    if (p.y > canvas.height) {
+                        p.y = -10;
+                        p.x = Math.random() * canvas.width;
+                    }
+
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+                    ctx.restore();
+                });
+                confettiAnimationId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function stopConfetti() {
+            if (confettiAnimationId) {
+                cancelAnimationFrame(confettiAnimationId);
+            }
+            const canvas = document.getElementById('canvas-confetti');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('canvas-confetti');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
+</body>
+</html>
